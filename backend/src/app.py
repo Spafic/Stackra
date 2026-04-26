@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI , Depends
 from fastapi.middleware.cors import CORSMiddleware
+from config.db import get_db
 
 app = FastAPI()
 
@@ -13,5 +14,7 @@ app.add_middleware(
 
 # Routers
 @app.get("/health")
-def health_check():
-    return {"status": "ok"}
+def health(conn=Depends(get_db)):
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1")
+    return {"status": "ok", "db": "connected"}

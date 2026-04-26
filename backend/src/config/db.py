@@ -1,10 +1,20 @@
 import pyodbc
-from .settings import DB_SERVER, DB_NAME, DB_USER, DB_PASSWORD
+from config.settings import DB_SERVER, DB_NAME
 
 def get_connection():
     conn_str = (
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={DB_SERVER};DATABASE={DB_NAME};"
-        f"UID={DB_USER};PWD={DB_PASSWORD}"
+        f"SERVER={DB_SERVER};"
+        f"DATABASE={DB_NAME};"
+        f"Trusted_Connection=yes;"
+        f"TrustServerCertificate=yes;"
+        f"Encrypt=no;"
     )
     return pyodbc.connect(conn_str)
+
+def get_db():
+    conn = get_connection()
+    try:
+        yield conn
+    finally:
+        conn.close()
