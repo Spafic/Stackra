@@ -1,16 +1,22 @@
-import os
+from functools import lru_cache
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dotenv import load_dotenv
+class Settings(BaseSettings):
+    # DB Settings
+    DB_SERVER: str = "localhost"
+    DB_PORT: int = 1433
+    DB_NAME: str = "stackra"
+    DB_USER: str = "sa"
+    DB_PASSWORD: str = ""
 
-load_dotenv()
+    # Auth Settings
+    SECRET_KEY: str = "changeme"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-DB_SERVER = os.getenv("DB_SERVER", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "1433"))
-DB_NAME = os.getenv("DB_NAME", "stackra")
-DB_USER = os.getenv("DB_USER", "sa")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+@lru_cache
+def get_settings():
+    return Settings()

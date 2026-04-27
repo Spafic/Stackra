@@ -2,6 +2,8 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from config.db import get_connection
 
+from auth.router import router as auth_router
+
 app = FastAPI(title="Stackra API", version="1.0.0")
 
 app.add_middleware(
@@ -13,6 +15,9 @@ app.add_middleware(
 )
 
 # Routers
+app.include_router(auth_router)
+
+
 @app.get("/health")
 def health(conn=Depends(get_connection)):
     try:
