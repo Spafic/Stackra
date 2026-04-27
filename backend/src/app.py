@@ -1,8 +1,8 @@
-from fastapi import FastAPI , Depends
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from config.db import get_db
+from config.db import get_connection
 
-app = FastAPI()
+app = FastAPI(title="Stackra API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -14,7 +14,17 @@ app.add_middleware(
 
 # Routers
 @app.get("/health")
-def health(conn=Depends(get_db)):
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1")
-    return {"status": "ok", "db": "connected"}
+def health(conn=Depends(get_connection)):
+    try:
+        recordset, _ = conn.Execute("SELECT 1 AS health_check")
+        value = None
+        if not recordset.EOF:
+            value = recordset.Fields("health_check").Value
+        if recordset.State == 1:
+            recordset.Close()
+
+        if value == 1:
+            return {"status": "ok", "db": "connected"}
+        raise HTTPException(status_code=503, detail="Database probe failed")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Healthcheck failed: {exc}") from exc
