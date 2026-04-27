@@ -1,187 +1,235 @@
 -- ============================================================
---  Freelancing Platform – Database Schema (DDL)
---  Derived from DB_Project.drawio (ER Diagram)
+--  Stackra – Freelancing Platform
+--  Full Schema with USERS supertype generalization
 -- ============================================================
+
+-- Create database
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'stackra')
+    CREATE DATABASE stackra;
+GO
+
+USE stackra;
+GO
+
 -- ----------------------------------------------------------------
--- 1. ADMIN
+-- 1. USERS (supertype)
+-- ----------------------------------------------------------------
+CREATE TABLE USERS (
+    User_ID    INT           NOT NULL IDENTITY(1,1),
+    Username   VARCHAR(100)  NOT NULL,
+    Password   VARCHAR(255)  NOT NULL,
+    Email      VARCHAR(150)  NOT NULL,
+    Time_Zone  VARCHAR(60),
+    Role       VARCHAR(20)   NOT NULL,
+    Created_At DATETIME      DEFAULT GETDATE(),
+    CONSTRAINT pk_users      PRIMARY KEY (User_ID),
+    CONSTRAINT uq_username   UNIQUE (Username),
+    CONSTRAINT uq_email      UNIQUE (Email),
+    CONSTRAINT chk_role      CHECK (Role IN ('admin', 'client', 'freelancer'))
+);
+GO
+
+-- ----------------------------------------------------------------
+-- 2. ADMIN (subtype)
 -- ----------------------------------------------------------------
 CREATE TABLE ADMIN (
-    Admin_ID INT NOT NULL,
-    Username VARCHAR(100) NOT NULL UNIQUE,
-    Password VARCHAR(255) NOT NULL,
-    Email VARCHAR(150) NOT NULL UNIQUE,
-    Time_Zone VARCHAR(60),
-    CONSTRAINT pk_admin PRIMARY KEY (Admin_ID)
+    User_ID  INT NOT NULL,
+    CONSTRAINT pk_admin      PRIMARY KEY (User_ID),
+    CONSTRAINT fk_admin_user FOREIGN KEY (User_ID)
+        REFERENCES USERS (User_ID) ON DELETE CASCADE
 );
+GO
+
 -- ----------------------------------------------------------------
--- 2. CLIENT
+-- 3. CLIENT (subtype)
 -- ----------------------------------------------------------------
 CREATE TABLE CLIENT (
-    Client_ID INT NOT NULL,
-    Username VARCHAR(100) NOT NULL UNIQUE,
-    Password VARCHAR(255) NOT NULL,
-    Email VARCHAR(150) NOT NULL UNIQUE,
-    Time_Zone VARCHAR(60),
-    Avg_Spending DECIMAL(12, 2),
-    CONSTRAINT pk_client PRIMARY KEY (Client_ID)
+    User_ID      INT            NOT NULL,
+    Avg_Spending DECIMAL(12, 2) DEFAULT 0,
+    CONSTRAINT pk_client      PRIMARY KEY (User_ID),
+    CONSTRAINT fk_client_user FOREIGN KEY (User_ID)
+        REFERENCES USERS (User_ID) ON DELETE CASCADE
 );
--- CLIENT multi-valued attribute: Fax Numbers
+GO
+
+-- CLIENT multi-valued: Fax Numbers
 CREATE TABLE CLIENT_FAX (
-    Client_ID INT NOT NULL,
-    Fax_Number VARCHAR(30) NOT NULL,
+    Client_ID  INT          NOT NULL,
+    Fax_Number VARCHAR(30)  NOT NULL,
     CONSTRAINT pk_client_fax PRIMARY KEY (Client_ID, Fax_Number),
-    CONSTRAINT fk_client_fax FOREIGN KEY (Client_ID) REFERENCES CLIENT (Client_ID) ON DELETE CASCADE
+    CONSTRAINT fk_client_fax FOREIGN KEY (Client_ID)
+        REFERENCES CLIENT (User_ID) ON DELETE CASCADE
 );
--- CLIENT multi-valued attribute: Phone Numbers
+GO
+
+-- CLIENT multi-valued: Phone Numbers
 CREATE TABLE CLIENT_PHONE (
-    Client_ID INT NOT NULL,
+    Client_ID    INT         NOT NULL,
     Phone_Number VARCHAR(30) NOT NULL,
     CONSTRAINT pk_client_phone PRIMARY KEY (Client_ID, Phone_Number),
-    CONSTRAINT fk_client_phone FOREIGN KEY (Client_ID) REFERENCES CLIENT (Client_ID) ON DELETE CASCADE
+    CONSTRAINT fk_client_phone FOREIGN KEY (Client_ID)
+        REFERENCES CLIENT (User_ID) ON DELETE CASCADE
 );
+GO
+
 -- ----------------------------------------------------------------
--- 3. FREELANCER
+-- 4. FREELANCER (subtype)
 -- ----------------------------------------------------------------
 CREATE TABLE FREELANCER (
-    Freelancer_ID INT NOT NULL,
-    Username VARCHAR(100) NOT NULL UNIQUE,
-    Password VARCHAR(255) NOT NULL,
-    Email VARCHAR(150) NOT NULL UNIQUE,
-    Time_Zone VARCHAR(60),
+    User_ID   INT  NOT NULL,
     Portfolio TEXT,
-    CONSTRAINT pk_freelancer PRIMARY KEY (Freelancer_ID)
+    CONSTRAINT pk_freelancer      PRIMARY KEY (User_ID),
+    CONSTRAINT fk_freelancer_user FOREIGN KEY (User_ID)
+        REFERENCES USERS (User_ID) ON DELETE CASCADE
 );
--- ----------------------------------------------------------------
--- 4. EXPERIENCE  (weak entity – identifying owner: FREELANCER)
---    Composite key: (Freelancer_ID, Company, Start_date)
--- ----------------------------------------------------------------
+GO
+
+-- FREELANCER weak entity: Experience
 CREATE TABLE EXPERIENCE (
-    Freelancer_ID INT NOT NULL,
-    Company VARCHAR(150) NOT NULL,
-    Start_date DATE NOT NULL,
-    End_date DATE,
-    Position VARCHAR(150),
-    Description TEXT,
-    CONSTRAINT pk_experience PRIMARY KEY (Freelancer_ID, Company, Start_date),
-    CONSTRAINT fk_exp_freelancer FOREIGN KEY (Freelancer_ID) REFERENCES FREELANCER (Freelancer_ID) ON DELETE CASCADE
+    Freelancer_ID INT          NOT NULL,
+    Company       VARCHAR(150) NOT NULL,
+    Start_Date    DATE         NOT NULL,
+    End_Date      DATE,
+    Position      VARCHAR(150),
+    Description   TEXT,
+    CONSTRAINT pk_experience      PRIMARY KEY (Freelancer_ID, Company, Start_Date),
+    CONSTRAINT fk_exp_freelancer  FOREIGN KEY (Freelancer_ID)
+        REFERENCES FREELANCER (User_ID) ON DELETE CASCADE
 );
--- ----------------------------------------------------------------
--- 5. SOCIALS  (weak entity – identifying owner: FREELANCER)
---    Composite key: (Freelancer_ID, URL)
--- ----------------------------------------------------------------
+GO
+
+-- FREELANCER weak entity: Socials
 CREATE TABLE SOCIALS (
-    Freelancer_ID INT NOT NULL,
-    URL VARCHAR(500) NOT NULL,
-    Type VARCHAR(60),
-    CONSTRAINT pk_socials PRIMARY KEY (Freelancer_ID, URL),
-    CONSTRAINT fk_socials_freelancer FOREIGN KEY (Freelancer_ID) REFERENCES FREELANCER (Freelancer_ID) ON DELETE CASCADE
+    Freelancer_ID INT          NOT NULL,
+    URL           VARCHAR(500) NOT NULL,
+    Type          VARCHAR(60),
+    CONSTRAINT pk_socials            PRIMARY KEY (Freelancer_ID, URL),
+    CONSTRAINT fk_socials_freelancer FOREIGN KEY (Freelancer_ID)
+        REFERENCES FREELANCER (User_ID) ON DELETE CASCADE
 );
+GO
+
 -- ----------------------------------------------------------------
--- 6. SKILLS
+-- 5. SKILLS
 -- ----------------------------------------------------------------
 CREATE TABLE SKILLS (
-    Name VARCHAR(100) NOT NULL,
-    Category VARCHAR(100),
+    Name        VARCHAR(100) NOT NULL,
+    Category    VARCHAR(100),
     Description TEXT,
-    Added_by INT,
-    -- FK → ADMIN
-    CONSTRAINT pk_skills PRIMARY KEY (Name),
-    CONSTRAINT fk_skills_admin FOREIGN KEY (Added_by) REFERENCES ADMIN (Admin_ID) ON DELETE
-    SET NULL
+    Added_By    INT,
+    CONSTRAINT pk_skills       PRIMARY KEY (Name),
+    CONSTRAINT fk_skills_admin FOREIGN KEY (Added_By)
+        REFERENCES ADMIN (User_ID) ON DELETE SET NULL
 );
--- ----------------------------------------------------------------
--- 7. FREELANCER_SKILLS  (M:N between FREELANCER and SKILLS)
--- ----------------------------------------------------------------
+GO
+
+-- M:N FREELANCER <-> SKILLS
 CREATE TABLE FREELANCER_SKILLS (
-    Freelancer_ID INT NOT NULL,
-    Skill_Name VARCHAR(100) NOT NULL,
+    Freelancer_ID INT          NOT NULL,
+    Skill_Name    VARCHAR(100) NOT NULL,
     CONSTRAINT pk_freelancer_skills PRIMARY KEY (Freelancer_ID, Skill_Name),
-    CONSTRAINT fk_fs_freelancer FOREIGN KEY (Freelancer_ID) REFERENCES FREELANCER (Freelancer_ID) ON DELETE CASCADE,
-    CONSTRAINT fk_fs_skill FOREIGN KEY (Skill_Name) REFERENCES SKILLS (Name) ON DELETE CASCADE
+    CONSTRAINT fk_fs_freelancer     FOREIGN KEY (Freelancer_ID)
+        REFERENCES FREELANCER (User_ID) ON DELETE CASCADE,
+    CONSTRAINT fk_fs_skill          FOREIGN KEY (Skill_Name)
+        REFERENCES SKILLS (Name) ON DELETE CASCADE
 );
+GO
+
 -- ----------------------------------------------------------------
--- 8. POST
+-- 6. POST
 -- ----------------------------------------------------------------
 CREATE TABLE POST (
-    Post_ID INT NOT NULL,
-    Job_Description TEXT,
-    Status VARCHAR(50),
-    Price_Min DECIMAL(12, 2),
-    Price_Max DECIMAL(12, 2),
-    Avail_Comm_Hours VARCHAR(100),
-    Expected_Deadline DATE,
-    Created_by_Client_ID INT NOT NULL,
-    -- FK → CLIENT
-    Accepted_by_Admin_ID INT,
-    -- FK → ADMIN
-    CONSTRAINT pk_post PRIMARY KEY (Post_ID),
-    CONSTRAINT fk_post_client FOREIGN KEY (Created_by_Client_ID) REFERENCES CLIENT (Client_ID) ON DELETE CASCADE,
-    CONSTRAINT fk_post_admin FOREIGN KEY (Accepted_by_Admin_ID) REFERENCES ADMIN (Admin_ID) ON DELETE
-    SET NULL
+    Post_ID              INT            NOT NULL IDENTITY(1,1),
+    Job_Description      TEXT,
+    Status               VARCHAR(50)    DEFAULT 'pending',
+    Price_Min            DECIMAL(12, 2),
+    Price_Max            DECIMAL(12, 2),
+    Avail_Comm_Hours     VARCHAR(100),
+    Expected_Deadline    DATE,
+    Created_By_Client_ID INT            NOT NULL,
+    Accepted_By_Admin_ID INT,
+    Created_At           DATETIME       DEFAULT GETDATE(),
+    CONSTRAINT pk_post        PRIMARY KEY (Post_ID),
+    CONSTRAINT chk_post_status CHECK (Status IN ('pending', 'active', 'closed', 'rejected')),
+    CONSTRAINT fk_post_client FOREIGN KEY (Created_By_Client_ID)
+        REFERENCES CLIENT (User_ID),
+    CONSTRAINT fk_post_admin  FOREIGN KEY (Accepted_By_Admin_ID)
+        REFERENCES ADMIN (User_ID) ON DELETE SET NULL
 );
+GO
+
 -- ----------------------------------------------------------------
--- 9. PROPOSAL
+-- 7. PROPOSAL
 -- ----------------------------------------------------------------
 CREATE TABLE PROPOSAL (
-    Proposal_ID INT NOT NULL,
+    Proposal_ID      INT            NOT NULL IDENTITY(1,1),
     Proposal_Message TEXT,
-    Status VARCHAR(50),
-    Price DECIMAL(12, 2),
+    Status           VARCHAR(50)    DEFAULT 'pending',
+    Price            DECIMAL(12, 2),
     Exp_Job_Duration VARCHAR(100),
     Avail_Comm_Hours VARCHAR(100),
-    Post_ID INT NOT NULL,
-    -- FK → POST
-    Freelancer_ID INT NOT NULL,
-    -- FK → FREELANCER
-    CONSTRAINT pk_proposal PRIMARY KEY (Proposal_ID),
-    CONSTRAINT fk_proposal_post FOREIGN KEY (Post_ID) REFERENCES POST (Post_ID) ON DELETE CASCADE,
-    CONSTRAINT fk_proposal_freelancer FOREIGN KEY (Freelancer_ID) REFERENCES FREELANCER (Freelancer_ID) ON DELETE CASCADE
+    Post_ID          INT            NOT NULL,
+    Freelancer_ID    INT            NOT NULL,
+    Created_At       DATETIME       DEFAULT GETDATE(),
+    CONSTRAINT pk_proposal          PRIMARY KEY (Proposal_ID),
+    CONSTRAINT chk_proposal_status  CHECK (Status IN ('pending', 'accepted', 'rejected')),
+    CONSTRAINT fk_proposal_post     FOREIGN KEY (Post_ID)
+        REFERENCES POST (Post_ID) ON DELETE CASCADE,
+    CONSTRAINT fk_proposal_freelancer FOREIGN KEY (Freelancer_ID)
+        REFERENCES FREELANCER (User_ID)
 );
+GO
+
 -- ----------------------------------------------------------------
--- 10. JOB
+-- 8. JOB
 -- ----------------------------------------------------------------
 CREATE TABLE JOB (
-    Job_ID INT NOT NULL,
-    Status VARCHAR(50),
-    Price DECIMAL(12, 2),
-    Project_Deadline DATE,
+    Job_ID               INT            NOT NULL IDENTITY(1,1),
+    Status               VARCHAR(50)    DEFAULT 'in_progress',
+    Price                DECIMAL(12, 2),
+    Project_Deadline     DATE,
     Accepted_Proposal_ID INT,
-    -- FK → PROPOSAL
-    CONSTRAINT pk_job PRIMARY KEY (Job_ID),
-    CONSTRAINT fk_job_proposal FOREIGN KEY (Accepted_Proposal_ID) REFERENCES PROPOSAL (Proposal_ID) ON DELETE
-    SET NULL
+    Created_At           DATETIME       DEFAULT GETDATE(),
+    CONSTRAINT pk_job        PRIMARY KEY (Job_ID),
+    CONSTRAINT chk_job_status CHECK (Status IN ('in_progress', 'completed', 'cancelled', 'disputed')),
+    CONSTRAINT fk_job_proposal FOREIGN KEY (Accepted_Proposal_ID)
+        REFERENCES PROPOSAL (Proposal_ID) ON DELETE SET NULL
 );
+GO
+
 -- ----------------------------------------------------------------
--- 11. REVIEW
--- ----------------------------------------------------------------
-CREATE TABLE REVIEW (
-    Review_ID INT NOT NULL,
-    FL_Rating DECIMAL(3, 2),
-    -- e.g. 4.75
-    FL_Description TEXT,
-    CL_Rating DECIMAL(3, 2),
-    CL_Description TEXT,
-    Job_ID INT NOT NULL,
-    -- FK → JOB
-    Admin_ID INT,
-    -- FK → ADMIN (moderates)
-    CONSTRAINT pk_review PRIMARY KEY (Review_ID),
-    CONSTRAINT fk_review_job FOREIGN KEY (Job_ID) REFERENCES JOB (Job_ID) ON DELETE CASCADE,
-    CONSTRAINT fk_review_admin FOREIGN KEY (Admin_ID) REFERENCES ADMIN (Admin_ID) ON DELETE
-    SET NULL
-);
--- ----------------------------------------------------------------
--- 12. DELIVERABLE  (weak entity – identifying owner: JOB)
---     Composite key: (Job_ID, Number)
+-- 9. DELIVERABLE (weak entity of JOB)
 -- ----------------------------------------------------------------
 CREATE TABLE DELIVERABLE (
-    Job_ID INT NOT NULL,
-    Number INT NOT NULL,
-    -- partial key
-    Attachment TEXT,
-    -- path / URL
+    Job_ID      INT  NOT NULL,
+    Number      INT  NOT NULL,
+    Attachment  TEXT,
     Description TEXT,
-    Deadline DATE,
-    CONSTRAINT pk_deliverable PRIMARY KEY (Job_ID, Number),
-    CONSTRAINT fk_deliverable_job FOREIGN KEY (Job_ID) REFERENCES JOB (Job_ID) ON DELETE CASCADE
+    Deadline    DATE,
+    CONSTRAINT pk_deliverable     PRIMARY KEY (Job_ID, Number),
+    CONSTRAINT fk_deliverable_job FOREIGN KEY (Job_ID)
+        REFERENCES JOB (Job_ID) ON DELETE CASCADE
 );
+GO
+
+-- ----------------------------------------------------------------
+-- 10. REVIEW
+-- ----------------------------------------------------------------
+CREATE TABLE REVIEW (
+    Review_ID      INT            NOT NULL IDENTITY(1,1),
+    FL_Rating      DECIMAL(3, 2),
+    FL_Description TEXT,
+    CL_Rating      DECIMAL(3, 2),
+    CL_Description TEXT,
+    Job_ID         INT            NOT NULL,
+    Admin_ID       INT,
+    CONSTRAINT pk_review       PRIMARY KEY (Review_ID),
+    CONSTRAINT uq_review_job   UNIQUE (Job_ID),
+    CONSTRAINT chk_fl_rating   CHECK (FL_Rating BETWEEN 0 AND 5),
+    CONSTRAINT chk_cl_rating   CHECK (CL_Rating BETWEEN 0 AND 5),
+    CONSTRAINT fk_review_job   FOREIGN KEY (Job_ID)
+        REFERENCES JOB (Job_ID) ON DELETE CASCADE,
+    CONSTRAINT fk_review_admin FOREIGN KEY (Admin_ID)
+        REFERENCES ADMIN (User_ID) ON DELETE SET NULL
+);
+GO
