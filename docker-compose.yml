@@ -4,7 +4,7 @@ services:
     container_name: stackra_db
     restart: always
     env_file:
-      - ./backend/.env
+      - ./.env
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=${DB_PASSWORD:-YourStrongbfs*42131@Password123}
