@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stackra.Backend", "Stackra.Backend\Stackra.Backend.csproj", "{4A76A974-9753-25C0-612E-0B701AEA8859}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stackra.Backend", "backend\Stackra.Backend.csproj", "{4A76A974-9753-25C0-612E-0B701AEA8859}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

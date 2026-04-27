@@ -23,7 +23,7 @@ docker compose up -d
 ## 4. Run the Backend API
 Navigate into the backend folder and start the API:
 ```bash
-cd Stackra.Backend
+cd backend
 dotnet run
 ```
 *Note: `dotnet run` will automatically install the NuGet packages (like DotNetEnv and SqlClient) the first time you run it.*

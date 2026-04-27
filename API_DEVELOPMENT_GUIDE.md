@@ -6,7 +6,7 @@ We are using a strict **Repository Pattern**. This means we separate our Databas
 
 ## 1. Where do things go?
 
-Inside the `Stackra.Backend` folder, you will see three main folders you need to care about:
+Inside the `backend` folder, you will see three main folders you need to care about:
 
 1. `Models/` - Put your C# Classes here (These represent your database tables).
 2. `Repositories/` - Put your ADO.NET SQL queries here (e.g., `SELECT`, `INSERT`).
@@ -21,7 +21,7 @@ Let's say you want to create an API that gets a User by their ID.
 ### Step 1: Create the Model
 Create a plain C# class in the `Models` folder that matches your SQL Table columns.
 
-**File:** `Stackra.Backend/Models/User.cs`
+**File:** `backend/Models/User.cs`
 ```csharp
 namespace Stackra.Backend.Models;
 
@@ -37,7 +37,7 @@ public class User
 This is where you write your **raw SQL queries** using ADO.NET. 
 *Rule: Controllers should NEVER contain SQL strings.*
 
-**File:** `Stackra.Backend/Repositories/UserRepository.cs`
+**File:** `backend/Repositories/UserRepository.cs`
 ```csharp
 using Microsoft.Data.SqlClient;
 using Stackra.Backend.Models;
@@ -96,7 +96,7 @@ public class UserRepository
 ### Step 3: Register the Repository (CRITICAL)
 Whenever you create a new Repository, you **must** tell .NET about it so it can be injected into your controllers. 
 
-Open `Stackra.Backend/Program.cs` and add this line:
+Open `backend/Program.cs` and add this line:
 ```csharp
 // Add this under builder.Services.AddControllers();
 builder.Services.AddScoped<Stackra.Backend.Repositories.UserRepository>();
@@ -105,7 +105,7 @@ builder.Services.AddScoped<Stackra.Backend.Repositories.UserRepository>();
 ### Step 4: Create the API Controller (The Routes)
 This replaces FastAPI routers. Controllers handle the HTTP requests, call the Repository, and return JSON responses.
 
-**File:** `Stackra.Backend/Controllers/UsersController.cs`
+**File:** `backend/Controllers/UsersController.cs`
 ```csharp
 using Microsoft.AspNetCore.Mvc;
 using Stackra.Backend.Models;
