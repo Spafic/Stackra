@@ -1,4 +1,10 @@
 using DotNetEnv;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Stackra.Backend.Options;
+using Stackra.Backend.Repositories;
+using Stackra.Backend.Services;
+using System.Text;
 
 Env.Load("../.env");
 
@@ -9,7 +15,54 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 
 // Register our new DatabaseService for Dependency Injection
-builder.Services.AddScoped<Stackra.Backend.Repositories.DatabaseService>();
+builder.Services.AddScoped<DatabaseService>();
+builder.Services.AddScoped<AuthRepository>();
+builder.Services.AddSingleton<AuthService>();
+
+var jwtSection = builder.Configuration.GetSection("Jwt");
+var jwtSecret = Environment.GetEnvironmentVariable("SECRET_KEY")
+    ?? jwtSection.GetValue<string>("SecretKey");
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("Jwt:SecretKey is required.");
+}
+
+var accessMinutesEnv = Environment.GetEnvironmentVariable("ACCESS_TOKEN_EXPIRE_MINUTES");
+var refreshDaysEnv = Environment.GetEnvironmentVariable("REFRESH_TOKEN_EXPIRE_DAYS");
+var accessMinutes = int.TryParse(accessMinutesEnv, out var accessParsed)
+    ? accessParsed
+    : jwtSection.GetValue<int>("AccessTokenMinutes");
+var refreshDays = int.TryParse(refreshDaysEnv, out var refreshParsed)
+    ? refreshParsed
+    : jwtSection.GetValue<int>("RefreshTokenDays");
+
+builder.Services.Configure<JwtOptions>(options =>
+{
+    options.Issuer = jwtSection.GetValue<string>("Issuer") ?? "Stackra";
+    options.Audience = jwtSection.GetValue<string>("Audience") ?? "Stackra";
+    options.SecretKey = jwtSecret;
+    options.AccessTokenMinutes = accessMinutes > 0 ? accessMinutes : 15;
+    options.RefreshTokenDays = refreshDays > 0 ? refreshDays : 7;
+});
+
+var jwtKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = jwtSection.GetValue<string>("Issuer") ?? "Stackra",
+            ValidAudience = jwtSection.GetValue<string>("Audience") ?? "Stackra",
+            IssuerSigningKey = jwtKey,
+            ClockSkew = TimeSpan.FromMinutes(1)
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -26,6 +79,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

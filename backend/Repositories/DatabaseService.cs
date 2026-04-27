@@ -15,13 +15,18 @@ public class DatabaseService
         _connectionString = $"{baseString}Password={password};";
     }
 
+    public SqlConnection CreateConnection()
+    {
+        return new SqlConnection(_connectionString);
+    }
+
     // This method demonstrates the exact ADO.NET pattern from the guide
     public string TestConnection()
     {
         string resultMessage = "Failed to connect.";
 
         // 1. Create a SqlConnection with the connection string
-        using (SqlConnection connection = new SqlConnection(_connectionString))
+        using (SqlConnection connection = CreateConnection())
         {
             // 2. Open the connection
             connection.Open();
@@ -31,7 +36,7 @@ public class DatabaseService
             using (SqlCommand command = new SqlCommand(sql, connection))
             {
                 // 4. (No parameters needed for this simple test)
-                
+
                 // 5. Execute the command and read the result
                 using (SqlDataReader reader = command.ExecuteReader())
                 {

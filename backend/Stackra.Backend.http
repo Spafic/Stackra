@@ -1,6 +1,29 @@
 @Stackra.Backend_HostAddress = http://localhost:5295
 
-GET {{Stackra.Backend_HostAddress}}/weatherforecast/
+### Login
+POST {{Stackra.Backend_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+	"usernameOrEmail": "admin@stackra.com",
+	"password": "Test123123$"
+}
+
+### Refresh
+POST {{Stackra.Backend_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+	"refreshToken": "PASTE_REFRESH_TOKEN"
+}
+
+### Logout
+POST {{Stackra.Backend_HostAddress}}/api/auth/logout
+Authorization: Bearer PASTE_ACCESS_TOKEN
+
+### Me (replace token)
+GET {{Stackra.Backend_HostAddress}}/api/auth/me
+Authorization: Bearer PASTE_ACCESS_TOKEN
 Accept: application/json
 
 ###
