@@ -1,12 +1,14 @@
-namespace Stackra.Backend.Models.Auth;
+using System.Collections.Generic;
 
-public class RegisterRequest
+namespace Stackra.Backend.Models.Clients;
+
+public class ClientRegisterRequest
 {
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
-    public string Role { get; set; } = string.Empty;
     public string? TimeZone { get; set; }
     public decimal? AvgSpending { get; set; }
-    public string? Portfolio { get; set; }
+    public List<string>? FaxNumbers { get; set; }
+    public List<string>? PhoneNumbers { get; set; }
 }

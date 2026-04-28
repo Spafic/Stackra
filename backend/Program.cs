@@ -17,6 +17,10 @@ builder.Services.AddControllers();
 // Register our new DatabaseService for Dependency Injection
 builder.Services.AddScoped<DatabaseService>();
 builder.Services.AddScoped<AuthRepository>();
+builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<RoleRepository>();
+builder.Services.AddScoped<ClientRepository>();
+builder.Services.AddScoped<FreelancerRepository>();
 builder.Services.AddSingleton<AuthService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");

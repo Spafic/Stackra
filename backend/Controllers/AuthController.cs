@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Stackra.Backend.Models.Auth;
+using Stackra.Backend.Models.Clients;
+using Stackra.Backend.Models.Freelancers;
 using Stackra.Backend.Repositories;
 using Stackra.Backend.Services;
 using System.Security.Claims;
@@ -21,12 +23,19 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public IActionResult Register([FromBody] RegisterRequest request)
+    public IActionResult RegisterDeprecated()
     {
-        request.Role = request.Role.Trim().ToLowerInvariant();
-        if (request.Role is not ("admin" or "client" or "freelancer"))
+        return BadRequest(new { message = "Use /api/auth/register/client or /api/auth/register/freelancer." });
+    }
+
+    [HttpPost("register/client")]
+    public IActionResult RegisterClient([FromBody] ClientRegisterRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Username) ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest(new { message = "Role must be admin, client, or freelancer." });
+            return BadRequest(new { message = "Username, email, and password are required." });
         }
 
         if (_authRepository.UserExists(request.Username, request.Email))
@@ -35,8 +44,44 @@ public class AuthController : ControllerBase
         }
 
         var passwordHash = _authService.HashPassword(request.Password);
-        var userId = _authRepository.CreateUser(request, passwordHash);
-        _authRepository.CreateRoleRow(userId, request);
+        var userId = _authRepository.CreateClientAccount(request, passwordHash);
+
+        var user = _authRepository.GetUserById(userId);
+        if (user == null)
+        {
+            return StatusCode(500, new { message = "Failed to load user after registration." });
+        }
+
+        var accessToken = _authService.GenerateAccessToken(user);
+        var refreshToken = _authService.GenerateRefreshToken(user);
+
+        return Ok(new AuthResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            UserId = user.UserId,
+            Username = user.Username,
+            Role = user.Role
+        });
+    }
+
+    [HttpPost("register/freelancer")]
+    public IActionResult RegisterFreelancer([FromBody] FreelancerRegisterRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Username) ||
+            string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(new { message = "Username, email, and password are required." });
+        }
+
+        if (_authRepository.UserExists(request.Username, request.Email))
+        {
+            return Conflict(new { message = "Username or email already exists." });
+        }
+
+        var passwordHash = _authService.HashPassword(request.Password);
+        var userId = _authRepository.CreateFreelancerAccount(request, passwordHash);
 
         var user = _authRepository.GetUserById(userId);
         if (user == null)
