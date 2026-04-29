@@ -108,7 +108,7 @@ public class AuthController : ControllerBase
         var user = _authRepository.GetUserByUsernameOrEmail(request.UsernameOrEmail);
         if (user == null || !_authService.TryVerifyPassword(request.Password, user.PasswordHash, out var needsUpgrade))
         {
-            return Unauthorized(new { message = "Invalid credentials." });
+            return Unauthorized(new { message = "Email or password is not valid." });
         }
 
         if (needsUpgrade)

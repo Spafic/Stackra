@@ -1,0 +1,222 @@
+/* Dashboard Content Styles */
+
+.content-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0px 6px 15px rgba(64, 79, 104, 0.05);
+    padding: 40px;
+    width: 100%;
+}
+
+/* Stepper Styling */
+.form-stepper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #ecedf2;
+}
+.step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #696969;
+    font-weight: 500;
+    font-size: 15px;
+}
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f0f5f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #696969;
+    flex-shrink: 0;
+}
+.step.active {
+    color: #ff4b2b;
+}
+.step.active .step-circle {
+    background-color: rgba(255, 75, 43, 0.1);
+    color: #ff4b2b;
+}
+.step-divider {
+    flex: 1;
+    height: 1px;
+    background-color: #ecedf2;
+    margin: 0 20px;
+}
+
+/* Form Fields */
+.form-group {
+    margin-bottom: 25px;
+    display: flex;
+    flex-direction: column;
+}
+.form-row {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 10px;
+}
+.form-row .form-group {
+    flex: 1;
+}
+.form-group label {
+    display: block;
+    font-size: 15px;
+    color: #202124;
+    font-weight: 500;
+    margin-bottom: 12px;
+    text-align: left;
+}
+.form-group input, 
+.form-group textarea, 
+.form-group select {
+    width: 100%;
+    padding: 16px 20px;
+    background-color: #f0f5f7;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 15px;
+    color: #696969;
+    transition: all 0.3s;
+    display: block;
+}
+.form-group input:focus, 
+.form-group textarea:focus, 
+.form-group select:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: #ff4b2b;
+}
+.form-group textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.form-actions {
+    margin-top: 30px;
+    text-align: left;
+}
+.submit-btn {
+    padding: 15px 40px;
+    background-color: #ff4b2b;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.submit-btn:hover {
+    background-color: #e03a1a;
+}
+
+/* Table Styling */
+.cases-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+.cases-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.cases-table tr:hover {
+    background-color: #fbfbfb;
+}
+.cases-table th {
+    text-align: left;
+    padding: 20px;
+    font-size: 14px;
+    color: #202124;
+    font-weight: 600;
+    border-bottom: 1px solid #ecedf2;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cases-table td {
+    padding: 20px;
+    border-bottom: 1px solid #ecedf2;
+    font-size: 15px;
+    color: #696969;
+    vertical-align: middle;
+}
+.title-cell {
+    font-weight: 500;
+    color: #202124 !important;
+    font-size: 16px;
+}
+.status-badge {
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.status-badge.active {
+    background-color: rgba(52, 168, 83, 0.1);
+    color: #34a853;
+}
+.status-badge.closed {
+    background-color: rgba(217, 48, 37, 0.1);
+    color: #d93025;
+}
+.applicants-cell {
+    color: #ff4b2b !important;
+    font-weight: 500;
+}
+.actions-cell {
+    display: flex;
+    gap: 12px;
+}
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: #f0f5f7;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: #696969;
+    flex-shrink: 0;
+}
+.action-btn svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    stroke: #696969; /* Explicit fallback color */
+    stroke-width: 2;
+    fill: none;
+    pointer-events: none;
+}
+.action-btn:hover svg {
+    stroke: #ffffff;
+}
+.action-btn:hover {
+    background-color: #ff4b2b;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 75, 43, 0.2);
+}
+.action-btn.delete-btn:hover {
+    background-color: #d93025;
+    box-shadow: 0 4px 8px rgba(217, 48, 37, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+    animation: fadeIn 0.4s ease forwards;
+}
