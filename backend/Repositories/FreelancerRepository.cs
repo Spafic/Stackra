@@ -74,6 +74,18 @@ WHERE User_ID = @userId;";
         command.ExecuteNonQuery();
     }
 
+    public bool ExperienceExists(int userId, string company, DateTime startDate)
+    {
+        const string sql = "SELECT COUNT(1) FROM EXPERIENCE WHERE Freelancer_ID = @userId AND Company = @company AND Start_Date = @startDate;";
+        using var connection = _databaseService.CreateConnection();
+        using var command = new SqlCommand(sql, connection);
+        command.Parameters.AddWithValue("@userId", userId);
+        command.Parameters.AddWithValue("@company", company);
+        command.Parameters.AddWithValue("@startDate", startDate);
+        connection.Open();
+        return (int)command.ExecuteScalar() > 0;
+    }
+
     public void AddExperience(int userId, ExperienceRequest request)
     {
         const string sql = @"
@@ -92,7 +104,7 @@ VALUES (@userId, @company, @startDate, @endDate, @position, @description);";
         command.ExecuteNonQuery();
     }
 
-    public void UpdateExperience(int userId, ExperienceRequest request)
+    public bool UpdateExperience(int userId, ExperienceRequest request)
     {
         const string sql = @"
 UPDATE EXPERIENCE
@@ -112,10 +124,10 @@ WHERE Freelancer_ID = @userId
         command.Parameters.AddWithValue("@position", (object?)request.Position ?? DBNull.Value);
         command.Parameters.AddWithValue("@description", (object?)request.Description ?? DBNull.Value);
         connection.Open();
-        command.ExecuteNonQuery();
+        return command.ExecuteNonQuery() > 0;
     }
 
-    public void DeleteExperience(int userId, string company, DateTime startDate)
+    public bool DeleteExperience(int userId, string company, DateTime startDate)
     {
         const string sql = @"
 DELETE FROM EXPERIENCE
@@ -129,7 +141,7 @@ WHERE Freelancer_ID = @userId
         command.Parameters.AddWithValue("@company", company);
         command.Parameters.AddWithValue("@startDate", startDate);
         connection.Open();
-        command.ExecuteNonQuery();
+        return command.ExecuteNonQuery() > 0;
     }
 
     public void AddSocial(int userId, SocialRequest request)

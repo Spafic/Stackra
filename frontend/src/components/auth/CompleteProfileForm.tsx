@@ -136,8 +136,8 @@ export default function CompleteProfileForm() {
                                 company: exp.company,
                                 startDate: exp.startDate,
                                 endDate: exp.endDate || null,
-                                position: exp.position,
-                                description: exp.description
+                                position: exp.position || null,
+                                description: exp.description || null
                             })
                         });
                     }
@@ -191,7 +191,7 @@ export default function CompleteProfileForm() {
                         <h3>Primary Time Zone</h3>
                     </div>
                     <div className="input-group">
-                        <select value={timeZone} onChange={e => setTimeZone(e.target.value)}>
+                        <select value={timeZone || ''} onChange={e => setTimeZone(e.target.value)}>
                             {TIME_ZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                         </select>
                     </div>
@@ -204,16 +204,16 @@ export default function CompleteProfileForm() {
                         </div>
                         <div className="input-group">
                             <label>Average Monthly Spending ($)</label>
-                            <input type="number" step="0.01" placeholder="Budget estimate" value={avgSpending} onChange={e => setAvgSpending(e.target.value)} />
+                            <input type="number" step="0.01" placeholder="Budget estimate" value={avgSpending || ''} onChange={e => setAvgSpending(e.target.value)} />
                         </div>
                         <div className="row">
                             <div className="input-group">
                                 <label>Phone Number</label>
-                                <input type="text" placeholder="+20 123..." value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+                                <input type="text" placeholder="+20 123..." value={phoneNumber || ''} onChange={e => setPhoneNumber(e.target.value)} />
                             </div>
                             <div className="input-group">
                                 <label>Fax Number</label>
-                                <input type="text" placeholder="+20 2..." value={faxNumber} onChange={e => setFaxNumber(e.target.value)} />
+                                <input type="text" placeholder="+20 2..." value={faxNumber || ''} onChange={e => setFaxNumber(e.target.value)} />
                             </div>
                         </div>
                     </div>
@@ -247,7 +247,7 @@ export default function CompleteProfileForm() {
                             </div>
                             <div className="input-group">
                                 <label>Portfolio URL</label>
-                                <input type="text" placeholder="https://behance.net/yourname" value={portfolio} onChange={e => setPortfolio(e.target.value)} />
+                                <input type="text" placeholder="https://behance.net/yourname" value={portfolio || ''} onChange={e => setPortfolio(e.target.value)} />
                             </div>
                         </div>
 

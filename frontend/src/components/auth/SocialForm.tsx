@@ -20,11 +20,11 @@ export default function SocialForm({ social, onUpdate, onRemove }: SocialFormPro
             <div className="row" style={{ alignItems: 'flex-end' }}>
                 <div className="input-group" style={{ flex: 3 }}>
                     <label>Profile URL</label>
-                    <input type="text" placeholder="https://..." value={social.url} onChange={e => onUpdate('url', e.target.value)} />
+                    <input type="text" placeholder="https://..." value={social.url || ''} onChange={e => onUpdate('url', e.target.value)} />
                 </div>
                 <div className="input-group" style={{ flex: 1 }}>
                     <label>Platform</label>
-                    <select value={social.type} onChange={e => onUpdate('type', e.target.value)}>
+                    <select value={social.type || 'LinkedIn'} onChange={e => onUpdate('type', e.target.value)}>
                         {socialTypes.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                 </div>

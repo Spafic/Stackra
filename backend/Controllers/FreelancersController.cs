@@ -78,18 +78,20 @@ public class FreelancersController : ControllerBase
     public IActionResult AddExperience([FromBody] ExperienceRequest request)
     {
         var userId = GetUserId();
-        if (userId == null)
-        {
-            return Unauthorized(new { message = "Invalid token." });
-        }
+        if (userId == null) return Unauthorized(new { message = "Invalid token." });
 
         if (string.IsNullOrWhiteSpace(request.Company))
         {
             return BadRequest(new { message = "Company is required." });
         }
 
+        if (_freelancerRepository.ExperienceExists(userId.Value, request.Company, request.StartDate))
+        {
+            return Conflict(new { message = "An experience at this company with the same start date already exists." });
+        }
+
         _freelancerRepository.AddExperience(userId.Value, request);
-        return NoContent();
+        return CreatedAtAction(nameof(GetFreelancer), new { userId = userId.Value }, request);
     }
 
     [Authorize(Roles = "admin")]
@@ -110,17 +112,11 @@ public class FreelancersController : ControllerBase
     public IActionResult UpdateExperience([FromBody] ExperienceRequest request)
     {
         var userId = GetUserId();
-        if (userId == null)
-        {
-            return Unauthorized(new { message = "Invalid token." });
-        }
+        if (userId == null) return Unauthorized(new { message = "Invalid token." });
 
-        if (string.IsNullOrWhiteSpace(request.Company))
-        {
-            return BadRequest(new { message = "Company is required." });
-        }
+        var success = _freelancerRepository.UpdateExperience(userId.Value, request);
+        if (!success) return NotFound(new { message = "Experience not found." });
 
-        _freelancerRepository.UpdateExperience(userId.Value, request);
         return NoContent();
     }
 
@@ -139,20 +135,14 @@ public class FreelancersController : ControllerBase
 
     [Authorize(Roles = "freelancer")]
     [HttpDelete("me/experiences")]
-    public IActionResult DeleteExperience([FromBody] ExperienceRequest request)
+    public IActionResult DeleteExperience([FromBody] ExperienceDeleteRequest request)
     {
         var userId = GetUserId();
-        if (userId == null)
-        {
-            return Unauthorized(new { message = "Invalid token." });
-        }
+        if (userId == null) return Unauthorized(new { message = "Invalid token." });
 
-        if (string.IsNullOrWhiteSpace(request.Company))
-        {
-            return BadRequest(new { message = "Company is required." });
-        }
+        var success = _freelancerRepository.DeleteExperience(userId.Value, request.Company, request.StartDate);
+        if (!success) return NotFound(new { message = "Experience not found." });
 
-        _freelancerRepository.DeleteExperience(userId.Value, request.Company, request.StartDate);
         return NoContent();
     }
 

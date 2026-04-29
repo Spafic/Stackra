@@ -34,7 +34,15 @@ export default function ProfileSection() {
                     setEmail(data.email);
                     setTimeZone(data.timeZone || TIME_ZONES[0]);
                     setPortfolio(data.portfolio || '');
-                    setExperiences(data.experiences || []);
+                    
+                    // Format dates for <input type="date">
+                    const formattedExps = (data.experiences || []).map((exp: any) => ({
+                        ...exp,
+                        startDate: exp.startDate ? exp.startDate.split('T')[0] : '',
+                        endDate: exp.endDate ? exp.endDate.split('T')[0] : ''
+                    }));
+                    setExperiences(formattedExps);
+                    
                     setSocials(data.socials || []);
                 }
             } catch (err) {
@@ -82,36 +90,47 @@ export default function ProfileSection() {
                 body: JSON.stringify({ portfolio })
             });
 
-            // 3. Sync Experiences (Simple approach: Try to add each)
-            const freelancerData = await (await apiFetch('/freelancers/me')).json();
+            // 3. Sync Experiences
+            const freelancerDataRes = await apiFetch('/freelancers/me');
+            const freelancerData = await freelancerDataRes.json();
             const dbExperiences: any[] = freelancerData.experiences || [];
 
+            // Add or Update
             for (const exp of experiences) {
                 if (exp.company && exp.startDate) {
-                    // Check if already in DB (matching by company and start date)
-                    const exists = dbExperiences.some(e => e.company === exp.company && e.startDate.startsWith(exp.startDate));
+                    // Clean the object for the API
+                    const cleanedExp = {
+                        ...exp,
+                        endDate: exp.endDate || null,
+                        position: exp.position || null,
+                        description: exp.description || null
+                    };
+
+                    const formattedStartDate = exp.startDate.split('T')[0];
+                    const exists = dbExperiences.some(e => e.company === exp.company && e.startDate.split('T')[0] === formattedStartDate);
+                    
                     if (!exists) {
                         await apiFetch('/freelancers/me/experiences', {
                             method: 'POST',
-                            body: JSON.stringify(exp)
-                        }).catch(() => {});
+                            body: JSON.stringify(cleanedExp)
+                        });
                     } else {
-                        // Update existing
                         await apiFetch('/freelancers/me/experiences', {
                             method: 'PUT',
-                            body: JSON.stringify(exp)
-                        }).catch(() => {});
+                            body: JSON.stringify(cleanedExp)
+                        });
                     }
                 }
             }
             // Remove deleted ones
             for (const oldExp of dbExperiences) {
-                const stillExists = experiences.some(e => e.company === oldExp.company && oldExp.startDate.startsWith(e.startDate));
+                const oldFormattedStart = oldExp.startDate.split('T')[0];
+                const stillExists = experiences.some(e => e.company === oldExp.company && e.startDate.split('T')[0] === oldFormattedStart);
                 if (!stillExists) {
                     await apiFetch('/freelancers/me/experiences', {
                         method: 'DELETE',
                         body: JSON.stringify({ company: oldExp.company, startDate: oldExp.startDate })
-                    }).catch(() => {});
+                    });
                 }
             }
 
@@ -124,12 +143,12 @@ export default function ProfileSection() {
                         await apiFetch('/freelancers/me/socials', {
                             method: 'POST',
                             body: JSON.stringify(social)
-                        }).catch(() => {});
+                        });
                     } else {
                         await apiFetch('/freelancers/me/socials', {
                             method: 'PUT',
                             body: JSON.stringify(social)
-                        }).catch(() => {});
+                        });
                     }
                 }
             }
@@ -139,7 +158,7 @@ export default function ProfileSection() {
                     await apiFetch('/freelancers/me/socials', {
                         method: 'DELETE',
                         body: JSON.stringify({ url: oldSocial.url })
-                    }).catch(() => {});
+                    });
                 }
             }
 
@@ -162,7 +181,7 @@ export default function ProfileSection() {
                     await apiFetch('/freelancers/me/skills', {
                         method: 'POST',
                         body: JSON.stringify({ skillName })
-                    }).catch(() => {});
+                    });
                 }
             }
             // Remove deleted ones
@@ -171,7 +190,7 @@ export default function ProfileSection() {
                     await apiFetch('/freelancers/me/skills', {
                         method: 'DELETE',
                         body: JSON.stringify({ skillName: oldSkillName })
-                    }).catch(() => {});
+                    });
                 }
             }
 
@@ -254,7 +273,7 @@ export default function ProfileSection() {
                                     <label>Company</label>
                                     <input
                                         type="text"
-                                        value={exp.company}
+                                        value={exp.company || ''}
                                         onChange={e => {
                                             const next = [...experiences];
                                             next[index].company = e.target.value;
@@ -267,7 +286,7 @@ export default function ProfileSection() {
                                     <label>Position</label>
                                     <input
                                         type="text"
-                                        value={exp.position}
+                                        value={exp.position || ''}
                                         onChange={e => {
                                             const next = [...experiences];
                                             next[index].position = e.target.value;
@@ -280,7 +299,7 @@ export default function ProfileSection() {
                                     <label>Start Date</label>
                                     <input
                                         type="date"
-                                        value={exp.startDate}
+                                        value={exp.startDate || ''}
                                         onChange={e => {
                                             const next = [...experiences];
                                             next[index].startDate = e.target.value;
@@ -293,7 +312,7 @@ export default function ProfileSection() {
                                     <label>End Date</label>
                                     <input
                                         type="date"
-                                        value={exp.endDate}
+                                        value={exp.endDate || ''}
                                         onChange={e => {
                                             const next = [...experiences];
                                             next[index].endDate = e.target.value;
@@ -302,10 +321,26 @@ export default function ProfileSection() {
                                         className="form-input"
                                     />
                                 </div>
+                                <div className="form-group full-width">
+                                    <label>Description</label>
+                                    <textarea
+                                        value={exp.description || ''}
+                                        onChange={e => {
+                                            const next = [...experiences];
+                                            next[index].description = e.target.value;
+                                            setExperiences(next);
+                                        }}
+                                        className="form-input textarea"
+                                        rows={3}
+                                    />
+                                </div>
                             </div>
                         </div>
                     ))}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    {experiences.length === 0 && (
+                        <p style={{ textAlign: 'center', color: '#999', margin: '15px 0' }}>No experience added yet.</p>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                         <button onClick={handleAddExperience} className="signup-add-btn">+ Add Experience</button>
                     </div>
                 </div>
@@ -314,30 +349,30 @@ export default function ProfileSection() {
             {/* SOCIALS Table Fields */}
             <div className="profile-section">
                 <div className="signup-section-header">
-                    <h3>Social Presence</h3>
+                    <h3>Social & Professional Links</h3>
                 </div>
                 <div className="content-card" style={{ marginBottom: '30px' }}>
                     {socials.map((social, index) => (
-                        <div key={index} className="signup-box" style={{ marginBottom: '15px' }}>
-                            <div className="form-row" style={{ alignItems: 'flex-end', display: 'flex', gap: '20px' }}>
-                                <div className="form-group" style={{ flex: 3, marginBottom: 0 }}>
-                                    <label>Profile URL</label>
+                        <div key={index} className="signup-box">
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>URL</label>
                                     <input
-                                        type="text"
-                                        value={social.url}
+                                        type="url"
+                                        value={social.url || ''}
                                         onChange={e => {
                                             const next = [...socials];
                                             next[index].url = e.target.value;
                                             setSocials(next);
                                         }}
-                                        placeholder="https://..."
                                         className="form-input"
+                                        placeholder="https://..."
                                     />
                                 </div>
-                                <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                                    <label>Platform</label>
+                                <div className="form-group">
+                                    <label>Type</label>
                                     <select
-                                        value={social.type}
+                                        value={social.type || 'LinkedIn'}
                                         onChange={e => {
                                             const next = [...socials];
                                             next[index].type = e.target.value;
