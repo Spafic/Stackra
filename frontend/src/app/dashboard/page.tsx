@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import FreelancerDashboard from '../../components/FreelancerDashboard';
-import ClientDashboard from '../../components/ClientDashboard';
+import FreelancerDashboard from '../../components/dashboard/freelancer/FreelancerDashboard';
+import ClientDashboard from '../../components/dashboard/client/ClientDashboard';
 
 export default function HomePage() {
     const router = useRouter();

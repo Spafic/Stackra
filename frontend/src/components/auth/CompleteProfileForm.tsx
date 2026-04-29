@@ -1,22 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import '../globals.css';
+import { TIME_ZONES } from '../dashboard/shared/constants';
+import ExperienceForm, { Experience } from './ExperienceForm';
+import SocialForm, { SocialLink } from './SocialForm';
 
-interface Experience {
-    company: string;
-    startDate: string;
-    endDate: string;
-    position: string;
-    description: string;
-}
-
-interface SocialLink {
-    url: string;
-    type: string;
-}
-
-export default function CompleteProfile() {
+export default function CompleteProfileForm() {
     const router = useRouter();
     const [role, setRole] = useState('');
     const [accessToken, setAccessToken] = useState('');
@@ -39,44 +28,6 @@ export default function CompleteProfile() {
     const [socials, setSocials] = useState<SocialLink[]>([
         { url: '', type: 'LinkedIn' }
     ]);
-
-    const socialTypes = ['LinkedIn', 'GitHub', 'Behance', 'Dribbble', 'X / Twitter', 'Facebook', 'Portfolio', 'Other'];
-
-    const timeZones = [
-        "(UTC+04:00) Abu Dhabi, Muscat, Baku",
-        "(UTC+09:30) Adelaide, Darwin",
-        "(UTC-09:00) Alaska",
-        "(UTC+06:00) Almaty, Novosibirsk, Dhaka",
-        "(UTC+03:00) Arabia Standard Time, Riyadh",
-        "(UTC-04:00) Atlantic Time (Canada)",
-        "(UTC+12:00) Auckland, Wellington, Fiji",
-        "(UTC-01:00) Azores, Cape Verde Islands",
-        "(UTC+03:00) Baghdad, Moscow, St. Petersburg",
-        "(UTC+07:00) Bangkok, Hanoi, Jakarta",
-        "(UTC+08:00) Beijing, Hong Kong, Singapore",
-        "(UTC+01:00) Berlin, Paris, Madrid, Rome",
-        "(UTC-05:00) Bogota, Lima, Quito",
-        "(UTC-03:00) Brazil, Buenos Aires, Georgetown",
-        "(UTC+02:00) Cairo, Egypt, Johannesburg",
-        "(UTC+10:00) Canberra, Melbourne, Sydney",
-        "(UTC-06:00) Central Time (US & Canada)",
-        "(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi",
-        "(UTC-05:00) Eastern Time (US & Canada)",
-        "(UTC-10:00) Hawaii",
-        "(UTC+05:00) Islamabad, Karachi, Tashkent",
-        "(UTC+04:30) Kabul",
-        "(UTC+05:45) Kathmandu",
-        "(UTC+00:00) London, Lisbon, Casablanca",
-        "(UTC+11:00) Magadan, Solomon Islands",
-        "(UTC-06:00) Mexico City, Monterrey",
-        "(UTC-02:00) Mid-Atlantic",
-        "(UTC-11:00) Midway Island, Samoa",
-        "(UTC-07:00) Mountain Time (US & Canada)",
-        "(UTC+09:00) Osaka, Sapporo, Tokyo, Seoul",
-        "(UTC-08:00) Pacific Time (US & Canada)",
-        "(UTC+03:30) Tehran",
-        "(UTC+06:30) Yangon (Rangoon)"
-    ].sort();
 
     const [msg, setMsg] = useState('');
 
@@ -187,16 +138,16 @@ export default function CompleteProfile() {
             }
 
             setMsg('Profile completed successfully!');
-            setTimeout(() => router.push('/home'), 1500);
+            setTimeout(() => router.push('/dashboard'), 1500);
         } catch (err) {
             setMsg('Error saving details.');
         }
     };
 
-    if (!role) return <div className="container">Loading...</div>;
+    if (!role) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>Loading Profile Data...</div>;
 
     return (
-        <div className="complete-profile-wrapper">
+        <div className="complete-profile-wrapper auth-pattern-bg">
             <form onSubmit={handleSubmit} className="professional-form">
                 <h1>Complete Your Profile</h1>
                 <p className="subtitle">Let's finalize your <strong>{role}</strong> details.</p>
@@ -207,7 +158,7 @@ export default function CompleteProfile() {
                     </div>
                     <div className="input-group">
                         <select value={timeZone} onChange={e => setTimeZone(e.target.value)}>
-                            {timeZones.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                            {TIME_ZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                         </select>
                     </div>
                 </div>
@@ -240,38 +191,13 @@ export default function CompleteProfile() {
                             </div>
 
                             {experiences.map((exp, index) => (
-                                <div key={index} className="experience-box">
-                                    <div className="box-header">
-                                        <h4>Experience {index + 1}</h4>
-                                        <button type="button" className="remove-link-btn" onClick={() => removeExperience(index)}>Remove</button>
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Company</label>
-                                        <input type="text" placeholder="Company Name" value={exp.company} onChange={e => updateExperience(index, 'company', e.target.value)} />
-                                    </div>
-                                    <div className="row">
-                                        <div className="input-group">
-                                            <label>Start Date</label>
-                                            <input type="date" value={exp.startDate} onChange={e => updateExperience(index, 'startDate', e.target.value)} />
-                                        </div>
-                                        <div className="input-group">
-                                            <label>End Date (Optional)</label>
-                                            <input type="date" value={exp.endDate} onChange={e => updateExperience(index, 'endDate', e.target.value)} />
-                                        </div>
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Position</label>
-                                        <input type="text" placeholder="e.g. Senior Developer" value={exp.position} onChange={e => updateExperience(index, 'position', e.target.value)} />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>Description</label>
-                                        <textarea
-                                            placeholder="Brief description of your role..."
-                                            value={exp.description}
-                                            onChange={e => updateExperience(index, 'description', e.target.value)}
-                                        />
-                                    </div>
-                                </div>
+                                <ExperienceForm 
+                                    key={index} 
+                                    experience={exp} 
+                                    index={index} 
+                                    onUpdate={(field, val) => updateExperience(index, field, val)}
+                                    onRemove={() => removeExperience(index)}
+                                />
                             ))}
                             {experiences.length === 0 && (
                                 <p style={{ textAlign: 'center', color: '#999', margin: '20px 0' }}>No experience entries added yet.</p>
@@ -297,23 +223,12 @@ export default function CompleteProfile() {
                             </div>
 
                             {socials.map((social, index) => (
-                                <div key={index} className="experience-box" style={{ marginBottom: '15px' }}>
-                                    <div className="row" style={{ alignItems: 'flex-end' }}>
-                                        <div className="input-group" style={{ flex: 3 }}>
-                                            <label>Profile URL</label>
-                                            <input type="text" placeholder="https://..." value={social.url} onChange={e => updateSocial(index, 'url', e.target.value)} />
-                                        </div>
-                                        <div className="input-group" style={{ flex: 1 }}>
-                                            <label>Platform</label>
-                                            <select value={social.type} onChange={e => updateSocial(index, 'type', e.target.value)}>
-                                                {socialTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="input-group" style={{ marginBottom: '35px', marginLeft: '20px', display: 'flex', alignItems: 'flex-end' }}>
-                                            <button type="button" className="remove-link-btn" onClick={() => removeSocial(index)}>Remove</button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <SocialForm 
+                                    key={index} 
+                                    social={social} 
+                                    onUpdate={(field, val) => updateSocial(index, field, val)}
+                                    onRemove={() => removeSocial(index)}
+                                />
                             ))}
                             {socials.length === 0 && (
                                 <p style={{ textAlign: 'center', color: '#999', margin: '15px 0' }}>No social links added.</p>
@@ -336,7 +251,7 @@ export default function CompleteProfile() {
                     align-items: flex-start;
                     min-height: 100vh;
                     padding: 50px 0;
-                    background-color: #fff;
+                    background-color: transparent;
                     width: 100%;
                 }
                 .professional-form {
@@ -409,7 +324,7 @@ export default function CompleteProfile() {
                 .row .input-group {
                     flex: 1;
                 }
-                .experience-box {
+                :global(.experience-box) {
                     background-color: #fff;
                     padding: 25px;
                     border-radius: 14px;
@@ -417,13 +332,13 @@ export default function CompleteProfile() {
                     margin-bottom: 20px;
                     position: relative;
                 }
-                .box-header {
+                :global(.box-header) {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
                     margin-bottom: 15px;
                 }
-                .box-header h4 {
+                :global(.box-header h4) {
                     margin: 0;
                     font-size: 15px;
                     color: #333;
@@ -446,7 +361,7 @@ export default function CompleteProfile() {
                     color: #fff;
                     transform: translateY(-1px);
                 }
-                .remove-link-btn {
+                :global(.remove-link-btn) {
                     color: #cc0000;
                     font-size: 12px;
                     font-weight: bold;
@@ -457,7 +372,7 @@ export default function CompleteProfile() {
                     text-transform: uppercase;
                     letter-spacing: 1px;
                 }
-                .remove-link-btn:hover {
+                :global(.remove-link-btn:hover) {
                     color: #ff0000;
                     text-decoration: underline;
                 }
