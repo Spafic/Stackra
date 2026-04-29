@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
 
 export default function LoginForm() {
     const router = useRouter();
@@ -12,22 +13,26 @@ export default function LoginForm() {
         e.preventDefault();
         setLoginMsg('');
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await apiFetch('/auth/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usernameOrEmail: loginIdentifier, password: loginPassword })
             });
             const data = await res.json();
             if (res.ok) {
                 setLoginMsg('Login successful!');
                 localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 localStorage.setItem('role', data.role);
+                localStorage.setItem('userId', data.userId.toString());
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('regEmail', data.email);
+                
                 router.push('/dashboard');
             } else {
                 setLoginMsg(data.message || 'Email or password is not valid.');
             }
         } catch (err) {
-            setLoginMsg('An error occurred');
+            setLoginMsg((err as Error).message);
         }
     };
 

@@ -61,6 +61,7 @@ public class AuthController : ControllerBase
             RefreshToken = refreshToken,
             UserId = user.UserId,
             Username = user.Username,
+            Email = user.Email,
             Role = user.Role
         });
     }
@@ -98,6 +99,7 @@ public class AuthController : ControllerBase
             RefreshToken = refreshToken,
             UserId = user.UserId,
             Username = user.Username,
+            Email = user.Email,
             Role = user.Role
         });
     }
@@ -126,6 +128,7 @@ public class AuthController : ControllerBase
             RefreshToken = refreshToken,
             UserId = user.UserId,
             Username = user.Username,
+            Email = user.Email,
             Role = user.Role
         });
     }
@@ -153,6 +156,7 @@ public class AuthController : ControllerBase
             RefreshToken = newRefreshToken,
             UserId = user.UserId,
             Username = user.Username,
+            Email = user.Email,
             Role = user.Role
         });
     }

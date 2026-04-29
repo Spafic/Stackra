@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
 import { TIME_ZONES } from '../dashboard/shared/constants';
 import ExperienceForm, { Experience } from './ExperienceForm';
 import SocialForm, { SocialLink } from './SocialForm';
@@ -8,7 +9,6 @@ import SocialForm, { SocialLink } from './SocialForm';
 export default function CompleteProfileForm() {
     const router = useRouter();
     const [role, setRole] = useState('');
-    const [accessToken, setAccessToken] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
 
@@ -33,15 +33,14 @@ export default function CompleteProfileForm() {
 
     useEffect(() => {
         const storedRole = localStorage.getItem('role');
-        const storedToken = localStorage.getItem('accessToken');
-        const storedUsername = localStorage.getItem('regUsername');
+        const storedUsername = localStorage.getItem('username');
         const storedEmail = localStorage.getItem('regEmail');
+        const storedToken = localStorage.getItem('accessToken');
 
         if (!storedToken) {
-            router.push('/');
+            router.push('/auth');
         } else {
             setRole(storedRole || '');
-            setAccessToken(storedToken);
             setUsername(storedUsername || '');
             setEmail(storedEmail || '');
         }
@@ -79,42 +78,44 @@ export default function CompleteProfileForm() {
         e.preventDefault();
         setMsg('Saving your profile...');
 
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-        };
-
         try {
-            await fetch('/api/users/me', {
+            // 1. Update Core User Info
+            await apiFetch('/users/me', {
                 method: 'PUT',
-                headers,
                 body: JSON.stringify({ username, email, timeZone })
             });
 
             if (role === 'client') {
-                await fetch('/api/clients/me', {
+                // 2. Update Client Profile
+                await apiFetch('/clients/me', {
                     method: 'PUT',
-                    headers,
                     body: JSON.stringify({ avgSpending: parseFloat(avgSpending) || 0 })
                 });
+                
                 if (phoneNumber) {
-                    await fetch('/api/clients/me/phone', { method: 'POST', headers, body: JSON.stringify({ phoneNumber }) });
+                    await apiFetch('/clients/me/phone', { 
+                        method: 'POST', 
+                        body: JSON.stringify({ phoneNumber }) 
+                    });
                 }
                 if (faxNumber) {
-                    await fetch('/api/clients/me/fax', { method: 'POST', headers, body: JSON.stringify({ faxNumber }) });
+                    await apiFetch('/clients/me/fax', { 
+                        method: 'POST', 
+                        body: JSON.stringify({ faxNumber }) 
+                    });
                 }
             } else if (role === 'freelancer') {
-                await fetch('/api/freelancers/me', {
+                // 2. Update Freelancer Profile
+                await apiFetch('/freelancers/me', {
                     method: 'PUT',
-                    headers,
                     body: JSON.stringify({ portfolio })
                 });
 
+                // 3. Add Experiences
                 for (const exp of experiences) {
                     if (exp.company && exp.startDate) {
-                        await fetch('/api/freelancers/me/experiences', {
+                        await apiFetch('/freelancers/me/experiences', {
                             method: 'POST',
-                            headers,
                             body: JSON.stringify({
                                 company: exp.company,
                                 startDate: exp.startDate,
@@ -126,11 +127,11 @@ export default function CompleteProfileForm() {
                     }
                 }
 
+                // 4. Add Socials
                 for (const social of socials) {
                     if (social.url) {
-                        await fetch('/api/freelancers/me/socials', {
+                        await apiFetch('/freelancers/me/socials', {
                             method: 'POST',
-                            headers,
                             body: JSON.stringify({ url: social.url, type: social.type })
                         });
                     }
@@ -140,7 +141,7 @@ export default function CompleteProfileForm() {
             setMsg('Profile completed successfully!');
             setTimeout(() => router.push('/dashboard'), 1500);
         } catch (err) {
-            setMsg('Error saving details.');
+            setMsg((err as Error).message);
         }
     };
 

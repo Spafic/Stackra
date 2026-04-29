@@ -1,38 +1,129 @@
-'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TIME_ZONES } from '../shared/constants';
+import { apiFetch } from '../../../lib/api';
 
 export default function ProfileSection() {
     // Profile States (DB Aligned)
-    const [username, setUsername] = useState('JohnDoe');
-    const [email, setEmail] = useState('john.doe@example.com');
+    const [userId, setUserId] = useState<number | null>(null);
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [timeZone, setTimeZone] = useState(TIME_ZONES[0]);
-    const [portfolio, setPortfolio] = useState('Experienced Full-Stack Developer with 5+ years of experience in React and .NET.');
+    const [portfolio, setPortfolio] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [msg, setMsg] = useState('');
 
-    // Skills State
-    const [skills, setSkills] = useState<string[]>(['React', 'Node.js', 'SQL Server', 'TypeScript']);
-    const [newSkill, setNewSkill] = useState('');
+    // Experience State
+    const [experiences, setExperiences] = useState<any[]>([]);
 
-    // Experience State (Experience Table)
-    const [experiences, setExperiences] = useState([
-        { company: 'Tech Solutions', position: 'Senior Dev', startDate: '2020-01-01', endDate: '2023-05-01', description: 'Led the frontend team.' }
-    ]);
+    // Socials State
+    const [socials, setSocials] = useState<any[]>([]);
 
-    // Socials State (Socials Table)
-    const [socials, setSocials] = useState([
-        { type: 'GitHub', url: 'https://github.com/johndoe' },
-        { type: 'LinkedIn', url: 'https://linkedin.com/in/johndoe' }
-    ]);
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await apiFetch('/freelancers/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserId(data.userId);
+                    setUsername(data.username);
+                    setEmail(data.email);
+                    setTimeZone(data.timeZone || TIME_ZONES[0]);
+                    setPortfolio(data.portfolio || '');
+                    setExperiences(data.experiences || []);
+                    setSocials(data.socials || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch profile', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProfile();
+    }, []);
 
-    const handleAddSkill = () => {
-        if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-            setSkills([...skills, newSkill.trim()]);
-            setNewSkill('');
+    const handleSave = async () => {
+        setMsg('Saving changes...');
+        try {
+            // 1. Update User info
+            await apiFetch('/users/me', {
+                method: 'PUT',
+                body: JSON.stringify({ username, email, timeZone })
+            });
+            localStorage.setItem('username', username);
+            localStorage.setItem('regEmail', email);
+
+            // 2. Update Freelancer info
+            await apiFetch('/freelancers/me', {
+                method: 'PUT',
+                body: JSON.stringify({ portfolio })
+            });
+
+            // 3. Sync Experiences (Simple approach: Try to add each)
+            const freelancerData = await (await apiFetch('/freelancers/me')).json();
+            const dbExperiences: any[] = freelancerData.experiences || [];
+
+            for (const exp of experiences) {
+                if (exp.company && exp.startDate) {
+                    // Check if already in DB (matching by company and start date)
+                    const exists = dbExperiences.some(e => e.company === exp.company && e.startDate.startsWith(exp.startDate));
+                    if (!exists) {
+                        await apiFetch('/freelancers/me/experiences', {
+                            method: 'POST',
+                            body: JSON.stringify(exp)
+                        }).catch(() => {});
+                    } else {
+                        // Update existing
+                        await apiFetch('/freelancers/me/experiences', {
+                            method: 'PUT',
+                            body: JSON.stringify(exp)
+                        }).catch(() => {});
+                    }
+                }
+            }
+            // Remove deleted ones
+            for (const oldExp of dbExperiences) {
+                const stillExists = experiences.some(e => e.company === oldExp.company && oldExp.startDate.startsWith(e.startDate));
+                if (!stillExists) {
+                    await apiFetch('/freelancers/me/experiences', {
+                        method: 'DELETE',
+                        body: JSON.stringify({ company: oldExp.company, startDate: oldExp.startDate })
+                    }).catch(() => {});
+                }
+            }
+
+            // 4. Sync Socials
+            const dbSocials: any[] = freelancerData.socials || [];
+            for (const social of socials) {
+                if (social.url) {
+                    const exists = dbSocials.some(s => s.url === social.url);
+                    if (!exists) {
+                        await apiFetch('/freelancers/me/socials', {
+                            method: 'POST',
+                            body: JSON.stringify(social)
+                        }).catch(() => {});
+                    } else {
+                        await apiFetch('/freelancers/me/socials', {
+                            method: 'PUT',
+                            body: JSON.stringify(social)
+                        }).catch(() => {});
+                    }
+                }
+            }
+            // Remove deleted ones
+            for (const oldSocial of dbSocials) {
+                if (!socials.some(s => s.url === oldSocial.url)) {
+                    await apiFetch('/freelancers/me/socials', {
+                        method: 'DELETE',
+                        body: JSON.stringify({ url: oldSocial.url })
+                    }).catch(() => {});
+                }
+            }
+
+            setMsg('Profile updated successfully!');
+            setTimeout(() => setMsg(''), 3000);
+        } catch (err) {
+            setMsg('Error saving changes: ' + (err as Error).message);
         }
-    };
-
-    const handleRemoveSkill = (skill: string) => {
-        setSkills(skills.filter(s => s !== skill));
     };
 
     const handleAddExperience = () => {
@@ -40,8 +131,10 @@ export default function ProfileSection() {
     };
 
     const handleAddSocial = () => {
-        setSocials([...socials, { type: '', url: '' }]);
+        setSocials([...socials, { type: 'LinkedIn', url: '' }]);
     };
+
+    if (loading) return <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'Montserrat, sans-serif' }}>Loading Profile...</div>;
 
     return (
         <div className="profile-container">
@@ -79,31 +172,6 @@ export default function ProfileSection() {
                     <div className="form-group">
                         <label>Portfolio / About Me</label>
                         <textarea value={portfolio} onChange={e => setPortfolio(e.target.value)} className="form-input textarea" rows={4} />
-                    </div>
-
-                    <div className="form-group">
-                        <label>Skills</label>
-                        <div className="skills-input-wrapper">
-                            <input
-                                type="text"
-                                placeholder="Add a skill (e.g. React)"
-                                value={newSkill}
-                                onChange={e => setNewSkill(e.target.value)}
-                                onKeyPress={e => e.key === 'Enter' && handleAddSkill()}
-                                className="form-input"
-                            />
-                            <button onClick={handleAddSkill} className="add-btn">Add</button>
-                        </div>
-                        <div className="skills-list">
-                            {skills.map(skill => (
-                                <span key={skill} className="skill-chip">
-                                    {skill}
-                                    <button onClick={() => handleRemoveSkill(skill)}>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
                     </div>
                 </div>
             </div>
@@ -243,7 +311,8 @@ export default function ProfileSection() {
                 </div>
             </div>
 
-            <button className="save-profile-btn" onClick={() => alert('Profile changes saved! (Mock)')}>Save Profile Changes</button>
+            <button className="save-profile-btn" onClick={handleSave}>Save Profile Changes</button>
+            {msg && <div className={msg.includes('successfully') ? 'success-msg' : 'error-msg'} style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold' }}>{msg}</div>}
         </div>
     );
 }

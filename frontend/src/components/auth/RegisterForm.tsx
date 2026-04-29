@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch } from '../../lib/api';
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -13,26 +14,28 @@ export default function RegisterForm() {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         setRegMsg('');
-        const endpoint = regRole === 'client' ? '/api/auth/register/client' : '/api/auth/register/freelancer';
+        const endpoint = regRole === 'client' ? '/auth/register/client' : '/auth/register/freelancer';
 
         try {
-            const res = await fetch(endpoint, {
+            const res = await apiFetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: regUsername, email: regEmail, password: regPassword })
             });
             const data = await res.json();
             if (res.ok) {
                 localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 localStorage.setItem('role', data.role);
-                localStorage.setItem('regUsername', regUsername);
-                localStorage.setItem('regEmail', regEmail);
+                localStorage.setItem('userId', data.userId.toString());
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('regEmail', data.email);
+                
                 router.push('/auth/complete');
             } else {
                 setRegMsg(data.message || 'Registration failed');
             }
         } catch (err) {
-            setRegMsg('An error occurred');
+            setRegMsg((err as Error).message);
         }
     };
 
