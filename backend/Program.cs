@@ -21,6 +21,7 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<ClientRepository>();
 builder.Services.AddScoped<FreelancerRepository>();
+builder.Services.AddScoped<SkillRepository>();
 builder.Services.AddSingleton<AuthService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");

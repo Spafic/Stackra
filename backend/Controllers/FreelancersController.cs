@@ -11,10 +11,12 @@ namespace Stackra.Backend.Controllers;
 public class FreelancersController : ControllerBase
 {
     private readonly FreelancerRepository _freelancerRepository;
+    private readonly SkillRepository _skillRepository;
 
-    public FreelancersController(FreelancerRepository freelancerRepository)
+    public FreelancersController(FreelancerRepository freelancerRepository, SkillRepository skillRepository)
     {
         _freelancerRepository = freelancerRepository;
+        _skillRepository = skillRepository;
     }
 
     [Authorize(Roles = "freelancer")]
@@ -183,6 +185,146 @@ public class FreelancersController : ControllerBase
         }
 
         _freelancerRepository.AddSocial(userId.Value, request);
+        return NoContent();
+    }
+
+    [Authorize(Roles = "freelancer")]
+    [HttpGet("me/skills")]
+    public IActionResult GetMySkills()
+    {
+        var userId = GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        if (!_freelancerRepository.FreelancerExists(userId.Value))
+        {
+            return NotFound(new { message = "Freelancer not found." });
+        }
+
+        var skills = _skillRepository.GetFreelancerSkills(userId.Value);
+        return Ok(skills);
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpGet("{userId:int}/skills")]
+    public IActionResult GetFreelancerSkills(int userId)
+    {
+        if (!_freelancerRepository.FreelancerExists(userId))
+        {
+            return NotFound(new { message = "Freelancer not found." });
+        }
+
+        var skills = _skillRepository.GetFreelancerSkills(userId);
+        return Ok(skills);
+    }
+
+    [Authorize(Roles = "freelancer")]
+    [HttpPost("me/skills")]
+    public IActionResult AddSkill([FromBody] FreelancerSkillRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        var skillName = request.SkillName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return BadRequest(new { message = "Skill name is required." });
+        }
+
+        if (!_skillRepository.SkillExists(skillName))
+        {
+            return NotFound(new { message = "Skill not found." });
+        }
+
+        if (_skillRepository.FreelancerSkillExists(userId.Value, skillName))
+        {
+            return Conflict(new { message = "Skill already assigned." });
+        }
+
+        _skillRepository.AddSkillToFreelancer(userId.Value, skillName);
+        return NoContent();
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpPost("{userId:int}/skills")]
+    public IActionResult AddSkillForFreelancer(int userId, [FromBody] FreelancerSkillRequest request)
+    {
+        var skillName = request.SkillName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return BadRequest(new { message = "Skill name is required." });
+        }
+
+        if (!_freelancerRepository.FreelancerExists(userId))
+        {
+            return NotFound(new { message = "Freelancer not found." });
+        }
+
+        if (!_skillRepository.SkillExists(skillName))
+        {
+            return NotFound(new { message = "Skill not found." });
+        }
+
+        if (_skillRepository.FreelancerSkillExists(userId, skillName))
+        {
+            return Conflict(new { message = "Skill already assigned." });
+        }
+
+        _skillRepository.AddSkillToFreelancer(userId, skillName);
+        return NoContent();
+    }
+
+    [Authorize(Roles = "freelancer")]
+    [HttpDelete("me/skills")]
+    public IActionResult RemoveSkill([FromBody] FreelancerSkillRequest request)
+    {
+        var userId = GetUserId();
+        if (userId == null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        var skillName = request.SkillName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return BadRequest(new { message = "Skill name is required." });
+        }
+
+        if (!_skillRepository.FreelancerSkillExists(userId.Value, skillName))
+        {
+            return NotFound(new { message = "Skill assignment not found." });
+        }
+
+        _skillRepository.RemoveSkillFromFreelancer(userId.Value, skillName);
+        return NoContent();
+    }
+
+    [Authorize(Roles = "admin")]
+    [HttpDelete("{userId:int}/skills")]
+    public IActionResult RemoveSkillForFreelancer(int userId, [FromBody] FreelancerSkillRequest request)
+    {
+        var skillName = request.SkillName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(skillName))
+        {
+            return BadRequest(new { message = "Skill name is required." });
+        }
+
+        if (!_freelancerRepository.FreelancerExists(userId))
+        {
+            return NotFound(new { message = "Freelancer not found." });
+        }
+
+        if (!_skillRepository.FreelancerSkillExists(userId, skillName))
+        {
+            return NotFound(new { message = "Skill assignment not found." });
+        }
+
+        _skillRepository.RemoveSkillFromFreelancer(userId, skillName);
         return NoContent();
     }
 
