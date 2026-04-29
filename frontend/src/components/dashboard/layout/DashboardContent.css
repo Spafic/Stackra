@@ -721,3 +721,43 @@
     border-color: #ff4b2b;
     box-shadow: 0 0 0 3px rgba(255, 75, 43, 0.1);
 }
+
+.skills-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+.skill-tag {
+    padding: 8px 18px;
+    background-color: #f0f5f7;
+    border: 1px solid #ecedf2;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    color: #696969;
+    font-weight: 500;
+}
+.skill-tag:hover {
+    background-color: #e8f0f2;
+    border-color: #d1dee3;
+    transform: translateY(-1px);
+}
+.skill-tag.selected {
+    background: linear-gradient(to right, #ff4b2b, #ff416c);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 10px rgba(255, 75, 43, 0.2);
+}
+
+.custom-skill-input {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.custom-skill-input input {
+    flex: 1;
+}

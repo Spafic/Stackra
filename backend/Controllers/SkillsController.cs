@@ -38,7 +38,7 @@ public class SkillsController : ControllerBase
         return skill == null ? NotFound(new { message = "Skill not found." }) : Ok(skill);
     }
 
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,freelancer")]
     [HttpPost]
     public IActionResult CreateSkill([FromBody] SkillCreateRequest request)
     {
@@ -54,7 +54,7 @@ public class SkillsController : ControllerBase
         }
 
         request.Name = name;
-        var adminId = GetUserId();
+        int? adminId = User.IsInRole("admin") ? GetUserId() : null;
         _skillRepository.CreateSkill(request, adminId);
 
         var created = _skillRepository.GetSkillByName(name);

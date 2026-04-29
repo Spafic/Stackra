@@ -18,6 +18,11 @@ export default function ProfileSection() {
     // Socials State
     const [socials, setSocials] = useState<any[]>([]);
 
+    // Skills State
+    const [availableSkills, setAvailableSkills] = useState<any[]>([]);
+    const [assignedSkills, setAssignedSkills] = useState<string[]>([]);
+    const [customSkill, setCustomSkill] = useState('');
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
@@ -38,7 +43,26 @@ export default function ProfileSection() {
                 setLoading(false);
             }
         };
+        const fetchSkills = async () => {
+            try {
+                const [allRes, myRes] = await Promise.all([
+                    apiFetch('/skills'),
+                    apiFetch('/freelancers/me/skills')
+                ]);
+                if (allRes.ok) setAvailableSkills(await allRes.json());
+                if (myRes.ok) {
+                    const mySkills = await myRes.json();
+                    setAssignedSkills(mySkills.map((s: any) => s.name));
+                }
+            } catch (err) {
+                console.error('Failed to fetch skills', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchProfile();
+        fetchSkills();
     }, []);
 
     const handleSave = async () => {
@@ -115,6 +139,38 @@ export default function ProfileSection() {
                     await apiFetch('/freelancers/me/socials', {
                         method: 'DELETE',
                         body: JSON.stringify({ url: oldSocial.url })
+                    }).catch(() => {});
+                }
+            }
+
+            // 5. Sync Skills
+            const dbSkillsRes = await apiFetch('/freelancers/me/skills');
+            const dbSkills: any[] = dbSkillsRes.ok ? await dbSkillsRes.json() : [];
+            const dbSkillNames = dbSkills.map(s => s.name);
+
+            // Add new ones
+            for (const skillName of assignedSkills) {
+                if (!dbSkillNames.includes(skillName)) {
+                    // Try to create globally first
+                    try {
+                        await apiFetch('/skills', {
+                            method: 'POST',
+                            body: JSON.stringify({ name: skillName })
+                        });
+                    } catch (err) {}
+
+                    await apiFetch('/freelancers/me/skills', {
+                        method: 'POST',
+                        body: JSON.stringify({ skillName })
+                    }).catch(() => {});
+                }
+            }
+            // Remove deleted ones
+            for (const oldSkillName of dbSkillNames) {
+                if (!assignedSkills.includes(oldSkillName)) {
+                    await apiFetch('/freelancers/me/skills', {
+                        method: 'DELETE',
+                        body: JSON.stringify({ skillName: oldSkillName })
                     }).catch(() => {});
                 }
             }
@@ -307,6 +363,79 @@ export default function ProfileSection() {
                     )}
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                         <button onClick={handleAddSocial} className="signup-add-btn">+ Add Social Link</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* SKILLS Table Fields */}
+            <div className="profile-section">
+                <div className="signup-section-header">
+                    <h3>Skills & Expertise</h3>
+                </div>
+                <div className="content-card" style={{ marginBottom: '30px' }}>
+                    <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>Manage your technical skills and areas of expertise.</p>
+                    <div className="skills-grid">
+                        {/* Render all assigned skills first (to ensure custom ones show up) */}
+                        {assignedSkills.map(name => (
+                            <div 
+                                key={name} 
+                                className="skill-tag selected"
+                                onClick={() => setAssignedSkills(assignedSkills.filter(s => s !== name))}
+                            >
+                                {name}
+                            </div>
+                        ))}
+                        {/* Render available skills that are NOT assigned */}
+                        {availableSkills
+                            .filter(skill => !assignedSkills.includes(skill.name))
+                            .map(skill => (
+                                <div 
+                                    key={skill.name} 
+                                    className="skill-tag"
+                                    onClick={() => setAssignedSkills([...assignedSkills, skill.name])}
+                                >
+                                    {skill.name}
+                                </div>
+                            ))
+                        }
+                    </div>
+                    {availableSkills.length === 0 && assignedSkills.length === 0 && (
+                        <p style={{ textAlign: 'center', color: '#999', padding: '10px' }}>
+                            {loading ? 'Loading available skills...' : 'No skills found. Add your own below!'}
+                        </p>
+                    )}
+                    <div className="custom-skill-input">
+                        <input 
+                            type="text" 
+                            placeholder="Add a custom skill..." 
+                            value={customSkill} 
+                            onChange={e => setCustomSkill(e.target.value)}
+                            onKeyPress={e => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = customSkill.trim();
+                                    if (val && !assignedSkills.includes(val)) {
+                                        setAssignedSkills([...assignedSkills, val]);
+                                        setCustomSkill('');
+                                    }
+                                }
+                            }}
+                            className="form-input"
+                        />
+                        <button 
+                            type="button" 
+                            className="signup-add-btn"
+                            style={{ height: '52px', marginTop: '0', padding: '0 30px' }}
+                            onClick={() => {
+                                const val = customSkill.trim();
+                                if (val && !assignedSkills.includes(val)) {
+                                    setAssignedSkills([...assignedSkills, val]);
+                                    setCustomSkill('');
+                                }
+                            }}
+                        >
+                            Add
+                        </button>
                     </div>
                 </div>
             </div>

@@ -29,6 +29,12 @@ export default function CompleteProfileForm() {
         { url: '', type: 'LinkedIn' }
     ]);
 
+    // Skills
+    const [availableSkills, setAvailableSkills] = useState<any[]>([]);
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [customSkill, setCustomSkill] = useState('');
+    const [loadingSkills, setLoadingSkills] = useState(true);
+
     const [msg, setMsg] = useState('');
 
     useEffect(() => {
@@ -43,6 +49,16 @@ export default function CompleteProfileForm() {
             setRole(storedRole || '');
             setUsername(storedUsername || '');
             setEmail(storedEmail || '');
+
+            // Fetch available skills if freelancer
+            if (storedRole === 'freelancer') {
+                setLoadingSkills(true);
+                apiFetch('/skills')
+                    .then(res => res.json())
+                    .then(data => setAvailableSkills(data))
+                    .catch(() => {})
+                    .finally(() => setLoadingSkills(false));
+            }
         }
     }, [router]);
 
@@ -135,6 +151,23 @@ export default function CompleteProfileForm() {
                             body: JSON.stringify({ url: social.url, type: social.type })
                         });
                     }
+                }
+                // 5. Add Skills
+                for (const skillName of selectedSkills) {
+                    // Try to create the skill if it doesn't exist
+                    try {
+                        await apiFetch('/skills', {
+                            method: 'POST',
+                            body: JSON.stringify({ name: skillName })
+                        });
+                    } catch (err) {
+                        // Ignore conflict/error if skill already exists
+                    }
+
+                    await apiFetch('/freelancers/me/skills', {
+                        method: 'POST',
+                        body: JSON.stringify({ skillName })
+                    });
                 }
             }
 
@@ -236,6 +269,72 @@ export default function CompleteProfileForm() {
                             )}
                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                                 <button type="button" className="add-btn" onClick={addSocial}>+ Add Social Link</button>
+                            </div>
+                        </div>
+                        <div className="form-section">
+                            <div className="section-header">
+                                <h3>Skills & Expertise</h3>
+                            </div>
+                            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>Select the skills that best describe your expertise.</p>
+                            <div className="skills-grid">
+                                {/* Render selected skills first */}
+                                {selectedSkills.map(name => (
+                                    <div 
+                                        key={name} 
+                                        className="skill-tag selected"
+                                        onClick={() => setSelectedSkills(selectedSkills.filter(s => s !== name))}
+                                    >
+                                        {name}
+                                    </div>
+                                ))}
+                                {/* Render available skills not selected */}
+                                {availableSkills
+                                    .filter(skill => !selectedSkills.includes(skill.name))
+                                    .map(skill => (
+                                        <div 
+                                            key={skill.name} 
+                                            className="skill-tag"
+                                            onClick={() => setSelectedSkills([...selectedSkills, skill.name])}
+                                        >
+                                            {skill.name}
+                                        </div>
+                                    ))
+                                }
+                            </div>
+                            {availableSkills.length === 0 && selectedSkills.length === 0 && (
+                                <p style={{ textAlign: 'center', color: '#999', padding: '10px', fontSize: '13px' }}>
+                                    {loadingSkills ? 'Loading available skills...' : 'No existing skills found. Add your own below!'}
+                                </p>
+                            )}
+                            <div className="custom-skill-input">
+                                <input 
+                                    type="text" 
+                                    placeholder="Add a custom skill..." 
+                                    value={customSkill} 
+                                    onChange={e => setCustomSkill(e.target.value)}
+                                    onKeyPress={e => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const val = customSkill.trim();
+                                            if (val && !selectedSkills.includes(val)) {
+                                                setSelectedSkills([...selectedSkills, val]);
+                                                setCustomSkill('');
+                                            }
+                                        }
+                                    }}
+                                />
+                                <button 
+                                    type="button" 
+                                    onClick={() => {
+                                        const val = customSkill.trim();
+                                        if (val && !selectedSkills.includes(val)) {
+                                            setSelectedSkills([...selectedSkills, val]);
+                                            setCustomSkill('');
+                                        }
+                                    }}
+                                >
+                                    Add
+                                </button>
                             </div>
                         </div>
                     </>
@@ -407,6 +506,60 @@ export default function CompleteProfileForm() {
                 }
                 .success-msg { color: #2ecc71; }
                 .error-msg { color: #e74c3c; }
+
+                .skills-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                    margin-top: 10px;
+                }
+                .skill-tag {
+                    padding: 8px 18px;
+                    background-color: #f0f0f0;
+                    border: 1px solid #ddd;
+                    border-radius: 20px;
+                    font-size: 13px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    user-select: none;
+                    color: #555;
+                }
+                .skill-tag:hover {
+                    background-color: #e8e8e8;
+                    border-color: #ccc;
+                    transform: translateY(-1px);
+                }
+                .skill-tag.selected {
+                    background: linear-gradient(to right, #ff4b2b, #ff416c);
+                    color: white;
+                    border-color: transparent;
+                    box-shadow: 0 4px 10px rgba(255, 75, 43, 0.2);
+                }
+                .custom-skill-input {
+                    margin-top: 25px;
+                    display: flex;
+                    gap: 10px;
+                }
+                .custom-skill-input input {
+                    flex: 1;
+                    padding: 12px 16px;
+                    border-radius: 10px;
+                    border: 1px solid #ddd;
+                    background-color: #f9f9f9;
+                }
+                .custom-skill-input button {
+                    padding: 0 25px;
+                    background-color: #333;
+                    color: white;
+                    border: none;
+                    border-radius: 10px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .custom-skill-input button:hover {
+                    background-color: #000;
+                }
             `}</style>
         </div>
     );
