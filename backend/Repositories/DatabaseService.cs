@@ -12,7 +12,10 @@ public class DatabaseService
     {
         var baseString = configuration.GetConnectionString("DefaultConnection");
         var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
-        _connectionString = $"{baseString}Password={password};";
+        if (!string.IsNullOrEmpty(password))
+            _connectionString = $"{baseString}Password={password};";
+        else
+            _connectionString = baseString ?? "";
     }
 
     public SqlConnection CreateConnection()

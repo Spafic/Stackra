@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout, { MenuItem } from '../layout/DashboardLayout';
 import '../layout/DashboardContent.css';
 
@@ -12,14 +13,25 @@ import ProfileSection from './ProfileSection';
 
 export default function FreelancerDashboard() {
     const [view, setView] = useState<string>('dashboard');
+    const router = useRouter();
 
     const freelancerMenuItems: MenuItem[] = [
         { id: 'dashboard', label: 'Dashboard', iconName: 'dashboard' },
         { id: 'find_work', label: 'Find Work', iconName: 'find_work' },
         { id: 'proposals', label: 'My Proposals', iconName: 'proposals' },
         { id: 'active_jobs', label: 'Active Jobs', iconName: 'manage' },
-        { id: 'profile', label: 'My Profile', iconName: 'profile' }
+        { id: 'profile', label: 'My Profile', iconName: 'profile' },
+        { id: 'logout', label: 'Logout', iconName: 'logout' }
     ];
+
+    const handleMenuSelect = (id: string) => {
+        if (id === 'logout') {
+            localStorage.clear();
+            router.push('/');
+        } else {
+            setView(id);
+        }
+    };
 
     const renderContent = () => {
         switch (view) {
@@ -37,8 +49,8 @@ export default function FreelancerDashboard() {
     };
 
     const pageTitles: Record<string, { title: string, subtitle: string }> = {
-        'dashboard': { title: 'Welcome back!', subtitle: 'Ready to find your next gig?' },
-        'find_work': { title: 'Find Work!', subtitle: 'Explore jobs that match your skills' },
+        'dashboard': { title: 'Welcome back', subtitle: 'Ready to find your next gig?' },
+        'find_work': { title: 'Find Work', subtitle: 'Explore jobs that match your skills' },
         'proposals': { title: 'My Proposals', subtitle: 'Track your active bids' },
         'active_jobs': { title: 'Active Jobs', subtitle: 'Manage your ongoing contracts' },
         'profile': { title: 'My Profile', subtitle: 'Keep your portfolio up to date' },
@@ -48,9 +60,9 @@ export default function FreelancerDashboard() {
         <DashboardLayout
             menuItems={freelancerMenuItems}
             activeMenu={view}
-            onMenuSelect={setView}
+            onMenuSelect={handleMenuSelect}
             pageTitle={pageTitles[view]?.title || 'Dashboard'}
-            pageSubtitle={pageTitles[view]?.subtitle || 'Ready to jump back in?'}
+            pageSubtitle={pageTitles[view]?.subtitle || ''}
         >
             {renderContent()}
         </DashboardLayout>

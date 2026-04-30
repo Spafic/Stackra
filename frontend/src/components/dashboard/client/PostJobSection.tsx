@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { apiFetch } from '../../../lib/api';
 
 export default function PostJobSection() {
     const [formStep, setFormStep] = useState(1);
@@ -8,14 +9,43 @@ export default function PostJobSection() {
     const [priceMax, setPriceMax] = useState('');
     const [availCommHours, setAvailCommHours] = useState('');
     const [expectedDeadline, setExpectedDeadline] = useState('');
+    const [msg, setMsg] = useState('');
 
-    const handlePostJob = () => {
-        alert('Job posted successfully! (Mock)');
-        // In a real app, reset form or redirect
+    const handlePostJob = async () => {
+        try {
+            const clientId = localStorage.getItem('userId');
+            const res = await apiFetch('/posts', {
+                method: 'POST',
+                body: JSON.stringify({
+                    jobDescription,
+                    priceMin: parseFloat(priceMin),
+                    priceMax: parseFloat(priceMax),
+                    availCommHours,
+                    expectedDeadline,
+                    createdByClientId: parseInt(clientId || '0', 10),
+                    status: 'pending'
+                })
+            });
+
+            if (res.ok) {
+                setMsg('Job posted successfully! Waiting for admin approval.');
+                setFormStep(1);
+                setJobDescription('');
+                setPriceMin('');
+                setPriceMax('');
+                setAvailCommHours('');
+                setExpectedDeadline('');
+            } else {
+                setMsg('Failed to post job.');
+            }
+        } catch (err) {
+            setMsg('Error posting job: ' + (err as Error).message);
+        }
     };
 
     return (
         <div className="content-card">
+            {msg && <div style={{ padding: '10px', background: '#e6f4ea', color: '#137333', marginBottom: '15px', borderRadius: '5px' }}>{msg}</div>}
             <div className="form-stepper">
                 <div className={`step ${formStep >= 1 ? 'active' : ''}`}>
                     <div className="step-circle">1</div> <span>Job Details</span>

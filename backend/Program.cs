@@ -22,7 +22,24 @@ builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<ClientRepository>();
 builder.Services.AddScoped<FreelancerRepository>();
 builder.Services.AddScoped<SkillRepository>();
+builder.Services.AddScoped<Stackra.Backend.Repositories.PostRepository>();
+builder.Services.AddScoped<Stackra.Backend.Repositories.ProposalRepository>();
+builder.Services.AddScoped<Stackra.Backend.Repositories.JobRepository>();
+builder.Services.AddScoped<Stackra.Backend.Repositories.DeliverableRepository>();
+builder.Services.AddScoped<Stackra.Backend.Repositories.ReviewRepository>();
 builder.Services.AddSingleton<AuthService>();
+
+// CORS: allow the Next.js frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var jwtSecret = Environment.GetEnvironmentVariable("SECRET_KEY")
@@ -74,6 +91,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseCors("AllowFrontend");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

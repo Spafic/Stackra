@@ -43,8 +43,8 @@ export default function AccountDropdown() {
 
       {dropdownOpen && (
         <div className={styles.dropdownMenu}>
-          <a href="#" className={styles.dropdownItem}>
-            Profile
+          <a href="/dashboard" className={styles.dropdownItem}>
+            Dashboard
           </a>
           <hr className={styles.divider} />
           <a href="#" className={styles.dropdownItem} onClick={handleLogout}>
