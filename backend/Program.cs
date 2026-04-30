@@ -22,6 +22,9 @@ builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<ClientRepository>();
 builder.Services.AddScoped<FreelancerRepository>();
 builder.Services.AddScoped<SkillRepository>();
+builder.Services.AddScoped<PostRepository>();
+builder.Services.AddScoped<ProposalRepository>();
+builder.Services.AddScoped<JobRepository>();
 builder.Services.AddSingleton<AuthService>();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -71,7 +74,32 @@ builder.Services.AddAuthorization();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Enter your JWT token here"
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
